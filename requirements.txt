@@ -6,4 +6,3 @@ tensorboardX
 xando
 pytest
 scipy
-rlprop
