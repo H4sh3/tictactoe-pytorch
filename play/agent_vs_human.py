@@ -5,10 +5,14 @@ from .game import Game
 if __name__ == '__main__':
     # flags
     parser = argparse.ArgumentParser()
-    parser.add_argument('-fp', action="store", dest="fp", type=int, default=1, choices=[1,2])
-    parser.add_argument('-algorithm', action="store", dest="algorithm", type=str, required=True, choices=["dqn","a2c"])
-    parser.add_argument('-net_type', action="store", dest="net_type", type=str, required=True, choices=["fc","cnn"])
-    parser.add_argument('-policy', action="store", dest="policy", type=str, required=True)
+    parser.add_argument('-fp', action="store", dest="fp",
+                        type=int, default=1, choices=[1, 2])
+    parser.add_argument('-algorithm', action="store", dest="algorithm",
+                        type=str, required=True, choices=["dqn", "a2c"])
+    parser.add_argument('-net_type', action="store", dest="net_type",
+                        type=str, required=True, choices=["fc", "cnn"])
+    parser.add_argument('-policy', action="store",
+                        dest="policy", type=str, required=True)
     parser.add_argument('-debug', action="store_true", dest="debug")
     args = parser.parse_args()
 
@@ -21,7 +25,7 @@ if __name__ == '__main__':
     # start playing
     game.play()
 
-    board = game.env._board
+    board = game.env.get_board()
     if board.player_won:
         if board.player_won.side == "X":
             print("AI won!")

@@ -8,12 +8,14 @@ import argparse
 import sys
 import torch
 import gym
-import env # module init needs to run
+import tictactoe_env  # module init needs to run
 from prop.algorithms.a2c import Agent
 from prop.net.feed_forward import FeedForward
 
+
 class CNNNet(FeedForward):
     """ compute action probability distribution and state value """
+
     def __init__(self, obs_size, n_actions):
         # model is initiated in parent class, set params early.
         self.obs_size = obs_size
@@ -22,13 +24,18 @@ class CNNNet(FeedForward):
 
     def model(self):
         common = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=256, kernel_size=3, stride=1, padding=1), # 3 channels -> `out_channels` different kernels/feature maps
-            nn.ReLU(), # negative numbers -> 0
-            nn.MaxPool2d(kernel_size=2, stride=1), # deformation invariance; subtle changes are captured
-            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=2, stride=1, padding=1),
+            # 3 channels -> `out_channels` different kernels/feature maps
+            nn.Conv2d(in_channels=3, out_channels=256,
+                      kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),  # negative numbers -> 0
+            # deformation invariance; subtle changes are captured
+            nn.MaxPool2d(kernel_size=2, stride=1),
+            nn.Conv2d(in_channels=256, out_channels=256,
+                      kernel_size=2, stride=1, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1),
-            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=2, stride=1, padding=1),
+            nn.Conv2d(in_channels=256, out_channels=256,
+                      kernel_size=2, stride=1, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1),
             nn.Flatten(),
@@ -41,9 +48,12 @@ class CNNNet(FeedForward):
 
     def forward(self, x, mask):
         # transfrom from one tensor of shape (9) into 3 tensors of shape (3,3) each
-        empty = torch.zeros(x.size()).masked_scatter_((x == 0), torch.ones(x.size())).view(-1, 3, 3)
-        player1 = torch.zeros(x.size()).masked_scatter_((x == 1), torch.ones(x.size())).view(-1, 3, 3)
-        player2 = torch.zeros(x.size()).masked_scatter_((x == 2), torch.ones(x.size())).view(-1, 3, 3)
+        empty = torch.zeros(x.size()).masked_scatter_(
+            (x == 0), torch.ones(x.size())).view(-1, 3, 3)
+        player1 = torch.zeros(x.size()).masked_scatter_(
+            (x == 1), torch.ones(x.size())).view(-1, 3, 3)
+        player2 = torch.zeros(x.size()).masked_scatter_(
+            (x == 2), torch.ones(x.size())).view(-1, 3, 3)
         cnn_input = torch.stack((empty, player1, player2), dim=1)
 
         # shared layers among actor and critic
@@ -59,6 +69,7 @@ class CNNNet(FeedForward):
         value = self.critic_head(common)
 
         return action_dist, value
+
 
 if __name__ == "__main__":
     # flags
@@ -78,9 +89,9 @@ if __name__ == "__main__":
     print(f"using: {device}")
 
     # setup env and agent and start training
-    env = gym.make('TicTacToeRandomPlayer-v0')
+    tictactoe_env = gym.make('TicTacToeRandomPlayer-v0')
     agent = Agent(
-        env=env, 
+        env=tictactoe_env,
         net=CNNNet,
         name="a2c-cnn",
         learning_rate=3e-5,

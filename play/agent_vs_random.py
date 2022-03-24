@@ -1,15 +1,16 @@
 import time
 import numpy as np
 import argparse
-from env.base import Player
+from tictactoe_env.base import Player
 from .game import Game
+
 
 def readable_board(board):
     matrix = np.asarray(board)
     # map numbers to letters
     v = np.vectorize(lambda x: dict(zip([0, 1, 2], [" ", "X", "O"]))[x])
     matrix = v(matrix)
-    
+
     readable = []
     for row in matrix:
         row_string = f" {row[0]} | {row[1]} | {row[2]} "
@@ -17,13 +18,18 @@ def readable_board(board):
         readable.append("-" * len(row_string))
     return readable
 
+
 if __name__ == '__main__':
     # flags
     parser = argparse.ArgumentParser()
-    parser.add_argument('-algorithm', action="store", dest="algorithm", type=str, required=True, choices=["dqn","a2c"])
-    parser.add_argument('-net_type', action="store", dest="net_type", type=str, required=True, choices=["fc","cnn"])
-    parser.add_argument('-policy', action="store", dest="policy", type=str, default="")
-    parser.add_argument('-num_games', action="store", dest="num_games", type=int, default=1000)
+    parser.add_argument('-algorithm', action="store", dest="algorithm",
+                        type=str, required=True, choices=["dqn", "a2c"])
+    parser.add_argument('-net_type', action="store", dest="net_type",
+                        type=str, required=True, choices=["fc", "cnn"])
+    parser.add_argument('-policy', action="store",
+                        dest="policy", type=str, default="")
+    parser.add_argument('-num_games', action="store",
+                        dest="num_games", type=int, default=1000)
     args = parser.parse_args()
 
     game = Game()
@@ -40,23 +46,24 @@ if __name__ == '__main__':
 
         game.env.seed(start)
         game.play()
-        board = game.env._board
+        board = game.env.get_board()
 
         if board.player_won:
             if board.player_won.side == Player.X.value:
                 x_won += 1
-                won_games.append((n,readable_board(board.board)))
+                won_games.append((n, readable_board(board.board)))
             elif board.player_won.side == Player.O.value:
                 o_won += 1
                 if board.board not in [b for _, b in lost_games]:
-                    lost_games.append((n,board.board))
+                    lost_games.append((n, board.board))
         else:
             draw += 1
 
         end = time.time()
 
-        print(f"Game #{n+1} - Iteration duration: {end - start}", end="\r", flush=True)
-        
+        print(f"Game #{n+1} - Iteration duration: {end - start}",
+              end="\r", flush=True)
+
     print("\n")
     print(f"X Won: {x_won}")
     print(f"O Won: {o_won}")

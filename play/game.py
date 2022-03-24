@@ -4,19 +4,20 @@ import time
 import sys
 import torch
 import gym
-from env.base import Player
+from tictactoe_env.base import Player
 
 # mapping between algorithms and their module paths
 algorithm_module_paths = dict(
-    dqn = "train.dqn",
-    a2c = "train.a2c",
+    dqn="train.dqn",
+    a2c="train.a2c",
 )
 
 # mapping between nets and their classes
 net_type_classes = dict(
-    fc = "FCNet",
-    cnn = "CNNNet",
+    fc="FCNet",
+    cnn="CNNNet",
 )
+
 
 class Game:
     def __init__(self, verbose=False, debug=False, first_player=None):
@@ -32,25 +33,28 @@ class Game:
     def load_algorithm(self, algorithm, module_paths=algorithm_module_paths):
         try:
             self.algorithm = algorithm
-            self.algorithm_module = importlib.import_module(module_paths[algorithm])
+            self.algorithm_module = importlib.import_module(
+                module_paths[algorithm])
         except Exception as e:
             sys.exit(e)
 
     def load_net(self, net_type):
         try:
-            self.net = getattr(self.algorithm_module, net_type_classes[net_type])
+            self.net = getattr(self.algorithm_module,
+                               net_type_classes[net_type])
         except Exception as e:
             sys.exit(e)
 
     def load_env(self, env):
         kwargs = dict()
 
-        kwargs["first_player"] = Player(self.first_player) if self.first_player else None
+        kwargs["first_player"] = Player(
+            self.first_player) if self.first_player else None
         if self.verbose:
             kwargs["player1_verbose"] = True
             kwargs["player2_verbose"] = True
             kwargs["board_verbose"] = True
-        
+
         self.env = gym.make(env, **kwargs)
 
         # seed
@@ -67,7 +71,8 @@ class Game:
 
         while True:
             x = torch.Tensor(obs).reshape(self.env.observation_space_n)
-            mask = torch.zeros(self.env.action_space_n).index_fill(0, torch.LongTensor(self.env.legal_actions),  1)
+            mask = torch.zeros(self.env.action_space_n).index_fill(
+                0, torch.LongTensor(self.env.legal_actions),  1)
 
             if self.algorithm == "dqn":
                 y = self.model(x, mask)
