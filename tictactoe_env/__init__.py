@@ -4,24 +4,24 @@ from gym.envs.registration import registry, register, make, spec
 
 register(
     id='TicTacToeBase-v0',
-    entry_point='env.base:TicTacToeEnv',
+    entry_point='environment.base:TicTacToeEnv',
     reward_threshold=0.7,
 )
 
 register(
     id='TicTacToeHumanPlayer-v0',
-    entry_point='env.human_player:TicTacToeEnv',
+    entry_point='environment.human_player:TicTacToeEnv',
     reward_threshold=0.7,
 )
 
 register(
     id='TicTacToeRandomPlayer-v0',
-    entry_point='env.random_player:TicTacToeEnv',
+    entry_point='environment.random_player:TicTacToeEnv',
     reward_threshold=0.7,
 )
 
 register(
     id='TicTacToePunishIllegalMoves-v0',
-    entry_point='env.punish_illegal_moves:TicTacToeEnv',
+    entry_point='environment.punish_illegal_moves:TicTacToeEnv',
     reward_threshold=0.7,
 )

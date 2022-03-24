@@ -13,17 +13,19 @@ from tictactoe import engine as tictactoe
 # https://stackoverflow.com/questions/40659212/futurewarning-elementwise-comparison-failed-returning-scalar-but-in-the-futur
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
+
 class Player(Enum):
     X = 1
     O = 2
 
+
 class TicTacToeEnv(gym.Env):
     environment_name = "TicTacToe Environment"
 
-    def __init__(self, 
-                 player1_verbose=False, 
-                 player2_verbose=False, 
-                 board_verbose=False, 
+    def __init__(self,
+                 player1_verbose=False,
+                 player2_verbose=False,
+                 board_verbose=False,
                  first_player=None,
                  rewards=dict(
                      pos_ep=1,
@@ -38,13 +40,15 @@ class TicTacToeEnv(gym.Env):
         # spaces
         self.action_space = spaces.Discrete(9)
         self.observation_space = spaces.Tuple(
-            (spaces.Discrete(3),spaces.Discrete(3))
+            (spaces.Discrete(3), spaces.Discrete(3))
         )
 
         # game
         self._board = tictactoe.Board(verbose=board_verbose)
-        self._player1 = tictactoe.Player(board=self._board, side=1, verbose=player1_verbose) # X
-        self._player2 = tictactoe.Player(board=self._board, side=2, verbose=player2_verbose) # O
+        self._player1 = tictactoe.Player(
+            board=self._board, side=1, verbose=player1_verbose)  # X
+        self._player2 = tictactoe.Player(
+            board=self._board, side=2, verbose=player2_verbose)  # O
         self._first_player = first_player
         self._done = False
 
@@ -53,7 +57,7 @@ class TicTacToeEnv(gym.Env):
 
         # thresholds
         self.thresholds = thresholds
-        s = sum([n for k,n in self.thresholds.items()])
+        s = sum([n for k, n in self.thresholds.items()])
         if s != 1:
             raise Exception(f"thresholds must equal to 1; got {s} instead.")
 
@@ -64,6 +68,9 @@ class TicTacToeEnv(gym.Env):
 
         # do stuff
         self.seed()
+
+    def get_board(self):
+        return self._board
 
     def step(self, action):
         if self._done:
@@ -101,7 +108,7 @@ class TicTacToeEnv(gym.Env):
             self.stats['games_played'] += 1
         else:
             reward = self.rewards['step']
-            
+
         return (self.state, reward, self._done, dict())
 
     def reset(self):
@@ -119,7 +126,7 @@ class TicTacToeEnv(gym.Env):
         pass
 
     def seed(self, seed=1):
-        random.seed(seed) # fixed seed
+        random.seed(seed)  # fixed seed
 
     @abc.abstractmethod
     def player2_policy(self):
@@ -130,7 +137,7 @@ class TicTacToeEnv(gym.Env):
     @property
     def legal_actions(self):
         cells = self._board.empty_cells
-        actions = [x*3+y for (x,y) in cells]
+        actions = [x*3+y for (x, y) in cells]
         return actions
 
     @property
@@ -152,11 +159,15 @@ class TicTacToeEnv(gym.Env):
         # ideal moves accumulated rewards
         win = 2 * self.rewards['step'] + self.rewards['pos_ep']
         # play till the end and draw
-        first_move_draw = 4 * self.rewards['step'] + self.rewards['draw'] # 4 moves + final move
-        second_move_draw = 3 * self.rewards['step'] + self.rewards['draw'] # 3 moves + final move
+        # 4 moves + final move
+        first_move_draw = 4 * self.rewards['step'] + self.rewards['draw']
+        # 3 moves + final move
+        second_move_draw = 3 * self.rewards['step'] + self.rewards['draw']
 
         # win some % of the time, draw some % of the time
-        weighed_rewards = win * self.thresholds['win_rate'] + first_move_draw * self.thresholds['draw_rate']/2 + second_move_draw * self.thresholds['draw_rate']/2
+        weighed_rewards = win * self.thresholds['win_rate'] + first_move_draw * \
+            self.thresholds['draw_rate']/2 + \
+            second_move_draw * self.thresholds['draw_rate']/2
 
         return weighed_rewards
 
@@ -164,7 +175,7 @@ class TicTacToeEnv(gym.Env):
         if self._first_player is None:
             # random
             self._first_player = random.choice(list(Player))
-        
+
         if self._first_player == Player.O:
             # Let O (player 2) play first
             self.player2_policy()
