@@ -84,8 +84,6 @@ if __name__ == "__main__":
     tictactoe_env = gym.make('TicTacToeRandomPlayer-v0',
                              thresholds=dict(
                                  win_rate=0.92,
-                                 win_rate=0.92,
-                                 win_rate=0.92,
                                  draw_rate=0.08
                              ))
     tictactoe_env.spec.reward_threshold = tictactoe_env.performance_threshold
