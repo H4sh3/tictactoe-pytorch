@@ -61,7 +61,9 @@ class Game:
         self.env.seed(time.time())
 
     def load_model(self, policy):
-        self.model = self.net(obs_size=9, n_actions=9)
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = self.net(9, 9,device)
         self.model.load_state_dict(torch.load(f"policies/{policy}"))
         self.model.eval()
 

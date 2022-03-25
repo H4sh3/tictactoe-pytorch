@@ -71,7 +71,8 @@ class Agent:
         avg_rewards = 0
         while True:
             # fill replay buffer with one episode from the current policy (epsilon is used)
-            self.load_replay_buffer(policy=self.policy_net, steps=steps)
+            for _ in range(50):
+                self.load_replay_buffer(policy=self.policy_net, steps=steps)
 
             # sample transitions
             transitions, idxs, is_weights = self.replay_buffer.sample(self.batch_size)
@@ -103,16 +104,22 @@ class Agent:
 
                 recent_eval.append(avg_rewards)
                 recent_eval = recent_eval[-10:]
-                print(sum(recent_loss)/len(recent_loss) )
-                loss_achieved = sum(recent_loss)/len(recent_loss) <= self.loss_cutoff
-                avg_rewards_achieved = sum(recent_eval)/len(recent_eval) >= self.env.spec.reward_threshold
-                std_dev_achieved = (self.max_std_dev < 0) or (self.max_std_dev >= 0 and stddev <= self.max_std_dev)
 
-                if loss_achieved and avg_rewards_achieved and std_dev_achieved:
+                avg_loss = sum(recent_loss)/len(recent_loss)
+                loss_achieved = avg_loss <= self.loss_cutoff
+                print(f'loss archived {loss_achieved}: {avg_loss} < {self.loss_cutoff}')
+
+                avg_eval = sum(recent_eval)/len(recent_eval)
+                avg_rewards_achieved = avg_eval >= self.env.spec.reward_threshold
+                print(f'avg_rewards_achieved {avg_rewards_achieved}: {avg_eval} >= {self.env.spec.reward_threshold}')
+
+                #std_dev_achieved = (self.max_std_dev < 0) or (self.max_std_dev >= 0 and stddev <= self.max_std_dev)
+
+
+                if loss_achieved and avg_rewards_achieved :#and std_dev_achieved:
                     break
 
             steps = steps + 1
-            print(f'Steps: {steps}')
 
         # save model
         policy_name = self.name if self.name else "dqn"

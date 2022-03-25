@@ -9,9 +9,13 @@ import tictactoe_env  # module init needs to run
 from prop.algorithms.dqn import Agent
 from prop.net.feed_forward import FeedForward
 
+#!/usr/bin/env python
+import signal
+import sys
+
 
 class FCNet(FeedForward):
-    def __init__(self, obs_size, n_actions):
+    def __init__(self, obs_size, n_actions,_):
         # model is initiated in parent class, set params early.
         self.obs_size = obs_size
         self.n_actions = n_actions
@@ -20,15 +24,17 @@ class FCNet(FeedForward):
     def model(self):
         # observations -> hidden layer with relu activation -> actions
         return nn.Sequential(
-            nn.Linear(self.obs_size, 64),
+            nn.Linear(self.obs_size, 12),
             nn.ReLU(),
-            nn.Linear(64, 64),
+            nn.Linear(12,12),
             nn.ReLU(),
-            nn.Linear(64, 64),
-            nn.ReLU(),
-            nn.Linear(64, 64),
-            nn.ReLU(),
-            nn.Linear(64, self.n_actions)
+            nn.Linear(12,12),
+            #nn.ReLU(),
+            #nn.Linear(64, 64),
+            #nn.ReLU(),
+            #nn.Linear(64, 64),
+            #nn.ReLU(),
+            nn.Linear(12, self.n_actions)
         )
 
 
@@ -91,8 +97,9 @@ if __name__ == "__main__":
     print(f"performance threshold: {tictactoe_env.performance_threshold}")
 
     agent = Agent(
+        logdir="logs",
         env=tictactoe_env,
-        net=CNNNet,
+        net=FCNet,
         name="dqn-cnn",
         learning_rate=1e-5,
         batch_size=128,
@@ -104,7 +111,18 @@ if __name__ == "__main__":
         target_net_update=500,
         eval_every=100,
         dev=device)
+
+    # register sig handler to save model on abort
+    def signal_handler(sig, frame):
+        torch.save(agent.policy_net.state_dict(), f"policies/ff-v1")
+        sys.exit(0)
+    signal.signal(signal.SIGINT, signal_handler)
+
+
     agent.train()
+
 
     print(f"#### stats ####")
     print(f"games played: {tictactoe_env.stats['games_played']}")
+    signal.pause()
+
