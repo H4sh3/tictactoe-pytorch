@@ -33,10 +33,11 @@ class FCNet(FeedForward):
 
 
 class CNNNet(FeedForward):
-    def __init__(self, obs_size, n_actions):
+    def __init__(self, obs_size, n_actions, device):
         # model is initiated in parent class, set params early.
         self.obs_size = obs_size
         self.n_actions = n_actions
+        self.device = device
         super(CNNNet, self).__init__()
 
     def model(self):
@@ -57,12 +58,12 @@ class CNNNet(FeedForward):
 
     def forward(self, x, mask=[]):
         # transfrom from one tensor of shape (9) into 3 tensors of shape (3,3) each
-        empty = torch.zeros(x.size()).masked_scatter_(
-            (x == 0), torch.ones(x.size())).view(-1, 3, 3)
-        player1 = torch.zeros(x.size()).masked_scatter_(
-            (x == 1), torch.ones(x.size())).view(-1, 3, 3)
-        player2 = torch.zeros(x.size()).masked_scatter_(
-            (x == 2), torch.ones(x.size())).view(-1, 3, 3)
+        empty = torch.zeros(x.size(),device=self.device).masked_scatter_(
+            (x == 0), torch.ones(x.size(),device=self.device)).view(-1, 3, 3)
+        player1 = torch.zeros(x.size(),device=self.device).masked_scatter_(
+            (x == 1), torch.ones(x.size(),device=self.device)).view(-1, 3, 3)
+        player2 = torch.zeros(x.size(),device=self.device).masked_scatter_(
+            (x == 2), torch.ones(x.size(),device=self.device)).view(-1, 3, 3)
         cnn_input = torch.stack((empty, player1, player2), dim=1)
         return super(CNNNet, self).forward(cnn_input, mask)
 
@@ -96,12 +97,12 @@ if __name__ == "__main__":
         learning_rate=1e-5,
         batch_size=128,
         optimizer=optim.Adam,
-        loss_cutoff=0.02,
+        loss_cutoff=0.03,
         max_std_dev=0.09,
         epsilon_decay=3000,
         double=True,
         target_net_update=500,
-        eval_every=500,
+        eval_every=100,
         dev=device)
     agent.train()
 

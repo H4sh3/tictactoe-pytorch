@@ -37,8 +37,7 @@ class Agent:
                  extra_metrics=None,
                  logdir=None, 
                  dev=None):
-        global device
-        device = dev
+        self.device = dev
 
         self.name = name
         self.double = double                # double q learning
@@ -56,8 +55,8 @@ class Agent:
         self.eval_every = eval_every # number of steps to run evaluations at
         self.replay_buffer = replay_buffer(replay_buffer_capacity)
         self.env = env
-        self.policy_net = net(self.env.observation_space_n, self.env.action_space_n).to(device) # what drives current actions; uses epsilon.
-        self.target_net = net(self.env.observation_space_n, self.env.action_space_n).to(device) # copied from policy net periodically; greedy.
+        self.policy_net = net(self.env.observation_space_n, self.env.action_space_n,self.device).to(self.device) # what drives current actions; uses epsilon.
+        self.target_net = net(self.env.observation_space_n, self.env.action_space_n,self.device).to(self.device) # copied from policy net periodically; greedy.
         self.logdir = logdir
 
         # init target_net
@@ -104,7 +103,7 @@ class Agent:
 
                 recent_eval.append(avg_rewards)
                 recent_eval = recent_eval[-10:]
-
+                print(sum(recent_loss)/len(recent_loss) )
                 loss_achieved = sum(recent_loss)/len(recent_loss) <= self.loss_cutoff
                 avg_rewards_achieved = sum(recent_eval)/len(recent_eval) >= self.env.spec.reward_threshold
                 std_dev_achieved = (self.max_std_dev < 0) or (self.max_std_dev >= 0 and stddev <= self.max_std_dev)
@@ -113,6 +112,7 @@ class Agent:
                     break
 
             steps = steps + 1
+            print(f'Steps: {steps}')
 
         # save model
         policy_name = self.name if self.name else "dqn"
@@ -199,12 +199,12 @@ class Agent:
             if sample <= threshold:
                 # explore
                 action = random.choice([i for i in range(self.env.action_space_n+1) if i in legal_actions])
-                return torch.tensor([[action]], device=device, dtype=torch.long)
+                return torch.tensor([[action]], device=self.device, dtype=torch.long)
         
         # greedy action
         with torch.no_grad():
             # index of highest value item returned from policy -> action
-            state = torch.Tensor(state).to(device)
+            state = torch.Tensor(state).to(self.device)
             mask = torch.zeros(self.env.action_space_n).index_fill(0, torch.LongTensor(legal_actions),  1)
             return policy(state, mask).argmax().view(1, 1)
 
@@ -224,7 +224,11 @@ class Agent:
 
         # calculate difference between actual and expected action values
         batch_loss = F.smooth_l1_loss(state_action_values, expected_state_action_values, reduction='none')
-        loss = (sum(batch_loss * torch.FloatTensor(is_weights).unsqueeze(1))/self.batch_size).squeeze()
+
+        if self.device.type == "cuda":
+            loss = (sum(batch_loss * torch.cuda.FloatTensor(is_weights,device=self.device).unsqueeze(1))/self.batch_size).squeeze()
+        else:
+            loss = (sum(batch_loss * torch.FloatTensor(is_weights).unsqueeze(1))/self.batch_size).squeeze()
 
         # update priority
         for i in range(self.batch_size):
@@ -250,9 +254,9 @@ class Agent:
         for each batch state according to policy_net.
         """
         # list -> tensor
-        state_batch = torch.Tensor(batch.state).to(device)
-        mask_batch = torch.Tensor(batch.mask).to(device)
-        action_batch = torch.Tensor(batch.action).to(device)
+        state_batch = torch.Tensor(batch.state).to(self.device)
+        mask_batch = torch.Tensor(batch.mask).to(self.device)
+        action_batch = torch.Tensor(batch.action).to(self.device)
         # get action values for each state in batch
         state_action_values = self.policy_net(state_batch, mask_batch)
         # select action from state_action_values according to action_batch value
@@ -267,12 +271,12 @@ class Agent:
         state value or 0 in case the state was final.
         """
         # a bool list indicating if next_state is final (s is not None)
-        non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=device, dtype=torch.bool)
-        non_final_next_states = torch.Tensor([s for s in batch.next_state if s is not None]).to(device)
+        non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=self.device, dtype=torch.bool)
+        non_final_next_states = torch.Tensor([s for s in batch.next_state if s is not None]).to(self.device)
         # get legal actions for non final states; (i, v) -> (list of legal actions, non_final_state)
-        next_mask = torch.Tensor([i for (i, v) in zip(list(batch.mask), non_final_mask.tolist()) if v]).to(device)
+        next_mask = torch.Tensor([i for (i, v) in zip(list(batch.mask), non_final_mask.tolist()) if v]).to(self.device)
         # initialize next_state_values to zeros
-        next_state_values = torch.zeros(self.batch_size).to(device)
+        next_state_values = torch.zeros(self.batch_size).to(self.device)
 
         if len(non_final_next_states) > 0:
             if self.double:
@@ -288,7 +292,7 @@ class Agent:
 
         # Compute the expected Q values
         # reward + max Q`(st+1, a) * discount
-        reward_batch = torch.Tensor([[r] for r in batch.reward]).to(device)
+        reward_batch = torch.Tensor([[r] for r in batch.reward]).to(self.device)
         state_action_values = reward_batch + (next_state_values.unsqueeze(1) * self.discount)
 
         return state_action_values
